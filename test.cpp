@@ -1,7 +1,7 @@
 #include<bits/stdc++.h>
 #define MAXSIZE 10001
-#define MAXC 1000
-#define MAXR 1000
+#define MAXC 10000
+#define MAXR 10000
 using namespace std;
 int item[MAXSIZE];
 int M, N; // 1x10^9 and 1x10^5
