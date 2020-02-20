@@ -77,7 +77,6 @@ int main()
  {
   printf("%d ", sol[i]);
  }
-
   //printf("%d\n", bk(0,M));
 
   return 0;
