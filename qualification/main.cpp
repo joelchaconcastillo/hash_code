@@ -131,11 +131,13 @@ void print_solution(struct x_solution &sol)
 
 struct x_solution iterated_local_search(struct x_solution best)
 {
-  int cont = 500;
+	return best;
+  int cont = 10;
   long f_best= eval(best);
 
   while(cont--)
   {
+	cout << cont <<endl;
     struct x_solution current = best;
     random_shuffle(current.x.begin(), current.x.end());
     long f_current = eval(current);
