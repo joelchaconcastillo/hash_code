@@ -1,5 +1,5 @@
 #include<bits/stdc++.h>
-#define MAXSIZE 1001
+#define MAXSIZE 10001
 #define MAXC 1000
 #define MAXR 1000
 using namespace std;
@@ -65,14 +65,15 @@ int main()
     if(!flag) break;
     c_row++;
   }
+ printf("%d\n", M-min_c);
   vector<int> sol;
-  while(min_r >= 0)
+  while(min_r >= 0 && T[min_r][min_c]!=-1)
   {
 	sol.push_back(T[min_r][min_c]);
 	min_c = prev[min_r][min_c];
 	min_r--;
   }
- printf("%d\n", sol.size());
+ //printf("%d\n", sol.size());
  for(int i = sol.size()-1; i>= 0; i--)
  {
   printf("%d ", sol[i]);
