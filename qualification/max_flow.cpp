@@ -2,11 +2,8 @@
 #define MAXNODE 1000
 #define INF 100000
 using namespace std;
-vector<vector<int>>edge;
-vector<int> p;
-int res[MAXNODE][MAXNODE], mf, f, s ,t;
 
-void augment(int v, int minEdge)
+void augment(int v, int minEdge, vector<int> &p, int s)
 {
   if(s==v)
   {
@@ -20,8 +17,11 @@ void augment(int v, int minEdge)
      res[v][p[v]] +=f;
   }
 }
-int max_flow()
+int max_flow(vector<vector<int>>edge)
 {
+  vector<int> p;
+  int res[MAXNODE][MAXNODE], mf, f, s ,t;
+
   mf = 0;
    while(true)
    {
@@ -46,10 +46,14 @@ int max_flow()
 	   }
 	}
       }
-      augment(t, INF);
+      augment(t, INF, p, s);
       if(f==0) break;
       mf +=f;
    }
+}
+void BMP(vector< vector<int> > &graph) //computes the
+{
+   
 }
 int main()
 {

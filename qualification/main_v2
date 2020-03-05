@@ -11,10 +11,7 @@ struct solution
 {
    vector<int> lib_order;
    vector< vector<pair<int, bool> > > x; // the first is library ids, second id of libraries..
-   vector< vector< int> > accumulative_score;
-   vector<int> start_day;
    vector<vector<pair<int, int> > > idxBL; //indexes of books in libraries...
-   vector<int> out_libraries;
 };
 
 solution local_search_1(struct solution initial, int cont);// swapping libraries..
@@ -27,9 +24,7 @@ void load_data();
 void initialization(solution &s);
 int main()
 {
-  int s = 1;//time(NULL);
-  cout <<s <<endl;
-  srand(s);
+  srand(1);
   load_data();
   solution sol = hyper_heuristic();
   return 0;
@@ -72,7 +67,7 @@ void sort_by_signup_time(struct solution &S)
 {
    vector<pair<int, int> > vp;
    for(int i = 0; i < S.x.size(); i++)
-   vp.push_back(make_pair( -shipping_l[S.lib_order[i]] + 2*signup_time_l[S.lib_order[i]], i));
+   vp.push_back(make_pair(signup_time_l[S.lib_order[i]], i));
    sort(vp.begin(), vp.end());
    for(int i = 0; i < vp.size(); i++) S.lib_order[i] = vp[i].second;
 }
@@ -87,6 +82,7 @@ solution hyper_heuristic()
  {
     //local search 1  by libraries..
      S = local_search_1(S, 1000);
+    
  } 
  print_solution(S);
  cout << fast_eval(S);
@@ -152,126 +148,56 @@ void unique_books(struct solution &s)
 long fast_eval(struct solution &S)
 {
  long total_score = 0;
- int day = 0;
+ vector< vector<int > > accum;
+ vector<int> lib;
  for(auto i_lib = S.lib_order.begin(); i_lib != S.lib_order.end(); i_lib++)
  {
-    day +=  signup_time_l[*i_lib];
-    if(day >=D) break;
-    double lib_cont=0;
-    bool updated = false;
-    for(auto i_book = S.x[*i_lib].begin(); i_book != S.x[*i_lib].end(); i_book++)
-    {
-	if( !i_book->second) continue;
-        lib_cont++;
-	if( ((double)lib_cont/(double)shipping_l[*i_lib])  > (D-day)  )break;
-        total_score += score_books[i_book->first]; 
-	updated =true;
-    }
-    if(!updated) day -= signup_time_l[*i_lib];
- }
- return total_score;
-}
-void update_information(solution &S)
-{
-  int day = 0;
-  S.out_libraries.clear();
-  S.start_day.clear();
-  S.start_day.resize(L);
-  S.accumulative_score.clear();
-  S.accumulative_score.resize(L);
-  for(auto i_lib = S.lib_order.begin(); i_lib != S.lib_order.end(); i_lib++)
-  {
-    vector<int> tmp; 
     int partial_score = 0;
+    vector<int> tmp;
     for(auto i_book = S.x[*i_lib].begin(); i_book != S.x[*i_lib].end(); i_book++)
     {
 	if( !i_book->second) continue;
         partial_score += score_books[i_book->first]; 
 	tmp.push_back(partial_score);
     }
-    S.accumulative_score[*i_lib] = tmp;
-    if(!tmp.empty())
-      day += signup_time_l[*i_lib];
-    S.start_day[*i_lib] = day;
-    if( (D-day) < S.accumulative_score.size()) S.out_libraries.push_back(*i_lib);
-  } 
-// for(int i = 0, day = 0; i < lib.size(); i++)
-// {
-//    int id_lib = lib[i];
-//    day += signup_time_l[id_lib];
-//    if(day >=D) break;
-//    int time_d;
-//    if( (D-day) < (double)accum[i].size()/(double)shipping_l[id_lib]  ) //warning overflow.....
-//      time_d =  (D - day)*shipping_l[id_lib];
-//    else
-//       time_d = accum[i].size();
-//    total_score +=  accum[i][time_d-1];
-// }
-
-}
-long incremental_evaluation_libraries(solution &s)
-{
- long total_score = 0;
+    if(tmp.empty()) continue;
+    accum.push_back(tmp);
+    lib.push_back(*i_lib);
+ }
+ for(int i = 0, day = 0; i < lib.size(); i++)
+ {
+    int id_lib = lib[i];
+    day += signup_time_l[id_lib];
+    if(day >=D) break;
+    int time_d;
+    if( (D-day) < (double)accum[i].size()/(double)shipping_l[id_lib]  ) //warning overflow.....
+      time_d =  (D - day)*shipping_l[id_lib];
+    else
+       time_d = accum[i].size();
+    total_score +=  accum[i][time_d-1];
+ }
  return total_score;
 }
 solution local_search_1(solution best, int cont)// swapping libraries..
 {
   long f_best= fast_eval(best);
-  update_information(best);
-  cout << best.out_libraries.size()<<endl;
   cout << f_best<<endl;
-
-  solution current = best;
   while(cont--)
   {
-    int idx1 = current.out_libraries[rand()% (int)current.out_libraries.size()], idx2 = rand()%L;
-    for(auto i = current.out_libraries.begin(); i != current.out_libraries.end(); i++)
-   {
-    int idx1 = *i;
-    //int idx1 = rand()%L, idx2 = rand()%L;
-    iter_swap(current.lib_order.begin()+idx1, current.lib_order.begin()+idx2);
+    solution current = best;
+    int a = rand()%L;
+    int b = rand()%L;
+    iter_swap(current.lib_order.begin()+a, current.lib_order.begin()+b);
+//    random_shuffle(current.x.begin(), current.x.end());
     long f_current = fast_eval(current);
     if( f_current > f_best)
     {
-        iter_swap(best.lib_order.begin()+idx1, best.lib_order.begin()+idx2);
-        update_information(current);
 	f_best= f_current;
 	best = current;
         print_solution(best);
 	cout << f_best<<endl;
-	i = current.out_libraries.begin();
-    }
-    else
-      iter_swap(current.lib_order.begin()+idx1, current.lib_order.begin()+idx2);
     }
   }
  return best;
 }
 
-//
-//solution local_search_1(solution best, int cont)// swapping libraries..
-//{
-//  long f_best= fast_eval(best);
-////  update_information(best);
-//  cout << f_best<<endl;
-//
-//  solution current = best;
-//  while(cont--)
-//  {
-//    //int idx1 = current.out_libraries[rand()% (int)current.out_libraries.size()], idx2 = rand()%L;
-//    int idx1 = rand()%L, idx2 = rand()%L;
-//    iter_swap(current.lib_order.begin()+idx1, current.lib_order.begin()+idx2);
-//    long f_current = fast_eval(current);
-//    if( f_current > f_best)
-//    {
-//        iter_swap(best.lib_order.begin()+idx1, best.lib_order.begin()+idx2);
-//	f_best= f_current;
-//	best = current;
-//        print_solution(best);
-//	cout << f_best<<endl;
-//    }
-//    else
-//      iter_swap(current.lib_order.begin()+idx1, current.lib_order.begin()+idx2);
-//  }
-// return best;
-//}
