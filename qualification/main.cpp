@@ -1,10 +1,12 @@
 #include <bits/stdc++.h>
+#define INF 1000000000
 using namespace std;
 
 int B, L, D; //number of books, librearies and days....
 vector<int> score_books, signup_time_l, shipping_l; // score of each book, number of days it takes to finish the library to 
 vector<vector<int> > books_in_library;
 vector<int> counter_books;
+
 
 ///the representation is by index of libraries and a mask indicating which book is active in each library..
 struct solution
@@ -17,6 +19,11 @@ struct solution
    vector<int> disabled_libraries;
 };
 
+
+
+void augment(int v, int minEdge, vector<int> &p, int s, unordered_map<int, unordered_map<int, int> > &adj, int &f);
+void max_flow(unordered_map<int, unordered_map<int, int> > &adj, int s, int t);
+
 solution local_search_1(struct solution initial, int cont);// swapping libraries..
 void print_solution(struct solution &sol);
 long fast_eval(struct solution &Sol);
@@ -28,7 +35,7 @@ void load_data();
 void initialization(solution &s);
 int main()
 {
-  int s ;//time(NULL);
+  int s =1;//time(NULL);
   cout <<s <<endl;
   srand(s);
   load_data();
@@ -84,6 +91,9 @@ solution hyper_heuristic()
  sort_by_signup_time(S);
  unique_books(S);
  modeling_MBMP(S);
+ cout << fast_eval(S);
+exit(0);
+cout << "dd"<<endl;
  int ite=1000;
  while(ite--)
  {
@@ -176,7 +186,7 @@ long fast_eval(struct solution &S)
 void update_information(solution &S)
 {
   int day = 0;
-  S.out_libraries.clear(); 
+  S.disabled_libraries.clear(); 
   S.start_day.clear();
   S.start_day.resize(L);
   S.accumulative_score.clear();
@@ -194,7 +204,7 @@ void update_information(solution &S)
     S.accumulative_score[*i_lib] = tmp;
     if(!tmp.empty())
       day += signup_time_l[*i_lib];
-    if( day + tmp.size() >= D) S.out_libraries.push_back(*i_lib);
+    if( day + tmp.size() >= D) S.disabled_libraries.push_back(*i_lib);
     S.start_day[*i_lib] = day;
 //    if( (D-day) < S.accumulative_score.size()/shipping_l[*i_lib]) S.out_libraries.push_back(*i_lib);
   } 
@@ -230,9 +240,9 @@ solution local_search_1(solution best, int cont)// swapping libraries..
     solution current = best;
     
     //defining neighbour neighbour... 
-    for(int i = 0; i < current.out_libraries.size(); i++)
+    for(int i = 0; i < current.disabled_libraries.size(); i++)
        for(int j = 0 ; j < current.lib_order.size(); j++)
- 	 vp_neighbour.push_back(make_pair(current.out_libraries[i], current.lib_order[j])); 
+ 	 vp_neighbour.push_back(make_pair(current.disabled_libraries[i], current.lib_order[j])); 
     random_shuffle(vp_neighbour.begin(), vp_neighbour.end());
    
     for(auto i = vp_neighbour.begin(); i != vp_neighbour.end(); i++)
@@ -287,25 +297,83 @@ void  modeling_MBMP(solution &S) //build a Maximum Bipartite Matching Problem
 
 //  //getting the active libraries...
 //  //compute the number of book per library given the current order..
+  unordered_map<int, unordered_map<int, int> > adj;
   int s, t;
-//  unordered_map<int, int>pair<int, int> > > f_adj;//, b_adj;
 
 //  for(int i = 0 ; i < S.edge.size(); i++)
-//  {
-//	vector<pair<int, int>> tmp;
-//     for(int j = 0; j < S.edge[i].size(); j++)
-//	tmp.push_back(make_pair(S.edge[i][j], INF));
-//     f_adj.push_back(tmp);
-//  }
-//
-//
-//  s = f_adj.size();
-//  vector<pair<int, int>> tmp;
-//  for(int i = 0; i < L; i++)
-//     tmp.push_back(make_pair(S.edge[i][j], S.edge[i].size()));
-//  f_adj.push_back(tmp);
-//  max_fow(f_adj, b_adj, s, t);
-  
+  for(auto i = S.lib_order.begin(); i != S.lib_order.end(); i++)
+  {
+     for(auto j = S.edge[*i].begin(); j != S.edge[*i].end(); j++)
+     {
+	int a = *i, b = (j->first+L);
+	adj[a][b] = INF; 
+	//adj[b][a] = 0; //link between libreries and books...
+     }
+  }
+  s = L+B;
+  t = L+B+1;
+  for(auto i = S.lib_order.begin(); i != S.lib_order.end(); i++) adj[s][*i] = S.edge[*i].size();
+  for(int j = 0; j < B; j++) adj[j+L][t] = 1;
+  //max_fow(adj, s, t);
+   for(auto i = S.lib_order.begin(); i != S.lib_order.end(); i++)
+  {
+     for(int j = 0;  j < S.edge[*i].size(); j++)
+     { 
+        S.edge[*i][j].second = false;
+	int a = *i, b = (S.edge[*i][j].first+L);
+	if(adj[b][a] >= 1){
+	cout << "lll" <<endl;
+	S.edge[*i][j].second = true;
+	}
+     }
+  }
+ 
+}
 
-    
+//////////////////////7
+void augment(int v, int minEdge, vector<int> &p, int s, unordered_map<int, unordered_map<int, int> > &adj, int &f)
+{
+  if(s==v)
+  {
+      f = minEdge; 
+      return;
+  }
+  else if( p[v] != -1)
+  {
+     augment(p[v], min(minEdge, adj[p[v]][v]),p,s, adj, f);
+     adj[p[v]][v] -=f;
+     adj[v][p[v]] +=f;
+  }
+}
+void max_flow(unordered_map<int, unordered_map<int, int> > &adj, int s, int t)
+{
+  vector<int> p;
+  int mf, f;
+   mf = 0;
+   while(true)
+   {
+      f = 0;
+      vector<int> dist(adj.size(), INF);
+      dist[s] = 0;
+      queue<int> q;
+      q.push(s);
+      while(!q.empty())
+      {
+	int u = q.front();
+        q.pop();
+	if(u==t) break;	
+        for(auto i = adj[u].begin(); i != adj[u].end(); i++)
+	{
+	   if( i->second > 0 && dist[i->first] == INF )
+	   {
+	      dist[i->first] = dist[u]+1;
+	      q.push(i->first);
+	      p[i->first] = u; 
+	   }
+	}
+      }
+      augment(t, INF, p, s, adj, f);
+      if(f==0) break;
+      mf +=f;
+   }
 }

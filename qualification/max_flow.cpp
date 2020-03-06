@@ -3,7 +3,7 @@
 #define INF 100000
 using namespace std;
 
-void augment(int v, int minEdge, vector<int> &p, int s)
+void augment(int v, int minEdge, vector<int> &p, int s, unordered_map<int, unordered_map<int, int> > adj, int &f)
 {
   if(s==v)
   {
@@ -12,21 +12,20 @@ void augment(int v, int minEdge, vector<int> &p, int s)
   }
   else if( p[v] != -1)
   {
-     augment(p[v], min(minEdge, res[p[v]][v]));
-     res[p[v]][v] -=f;
-     res[v][p[v]] +=f;
+     augment(p[v], min(minEdge, adj[p[v]][v]),p,s, adj, f);
+     adj[p[v]][v] -=f;
+     adj[v][p[v]] +=f;
   }
 }
-void max_flow(vector<vector<pair<int, int> > >f_adj, vector<vector<pair<int, int> > >f_adj, int s, int e)
+void max_flow(unordered_map<int, unordered_map<int, int> > adj, int s, int t)
 {
   vector<int> p;
-  int mf, f, s ,t;
-
-  mf = 0;
+  int mf, f;
+   mf = 0;
    while(true)
    {
       f = 0;
-      vector<int> dist(MAXNODE, INF);
+      vector<int> dist(adj.size(), INF);
       dist[s] = 0;
       queue<int> q;
       q.push(s);
@@ -35,18 +34,17 @@ void max_flow(vector<vector<pair<int, int> > >f_adj, vector<vector<pair<int, int
 	int u = q.front();
         q.pop();
 	if(u==t) break;	
-	for(int i = 0; i < f_adj[u].size(); i++)
+        for(auto i = adj[u].begin(); i != adj[u].end(); i++)
 	{
-	   pair<int, int> v = f_adj[u][i];
-	   if( v.second > 0 && dist[v.first] == INF )
+	   if( i->second > 0 && dist[i->first] == INF )
 	   {
-	      dist[v.first] = dist[u]+1;
-	      q.push(v.first);
-	      p[v.first] = u; 
+	      dist[i->first] = dist[u]+1;
+	      q.push(i->first);
+	      p[i->first] = u; 
 	   }
 	}
       }
-      augment(t, INF, p, s);
+      augment(t, INF, p, s, adj, f);
       if(f==0) break;
       mf +=f;
    }
