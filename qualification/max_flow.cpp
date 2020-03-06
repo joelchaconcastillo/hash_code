@@ -17,10 +17,10 @@ void augment(int v, int minEdge, vector<int> &p, int s)
      res[v][p[v]] +=f;
   }
 }
-void max_flow(vector<vector<int>>edge, int s, int e)
+void max_flow(vector<vector<pair<int, int> > >f_adj, vector<vector<pair<int, int> > >f_adj, int s, int e)
 {
   vector<int> p;
-  int res[MAXNODE][MAXNODE], mf, f, s ,t;
+  int mf, f, s ,t;
 
   mf = 0;
    while(true)
@@ -35,14 +35,14 @@ void max_flow(vector<vector<int>>edge, int s, int e)
 	int u = q.front();
         q.pop();
 	if(u==t) break;	
-	for(int i = 0; i < edge[u].size(); i++)
+	for(int i = 0; i < f_adj[u].size(); i++)
 	{
-	   int v = edge[u][i];
-	   if( res[u][v] > 0 && dist[v] == INF )
+	   pair<int, int> v = f_adj[u][i];
+	   if( v.second > 0 && dist[v.first] == INF )
 	   {
-	      dist[v] = dist[u]+1;
-	      q.push(v);
-	      p[v] = u; 
+	      dist[v.first] = dist[u]+1;
+	      q.push(v.first);
+	      p[v.first] = u; 
 	   }
 	}
       }

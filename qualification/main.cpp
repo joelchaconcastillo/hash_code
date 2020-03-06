@@ -176,7 +176,7 @@ long fast_eval(struct solution &S)
 void update_information(solution &S)
 {
   int day = 0;
-  S.out_libraries.clear();
+  S.out_libraries.clear(); 
   S.start_day.clear();
   S.start_day.resize(L);
   S.accumulative_score.clear();
@@ -237,7 +237,7 @@ solution local_search_1(solution best, int cont)// swapping libraries..
    
     for(auto i = vp_neighbour.begin(); i != vp_neighbour.end(); i++)
     {
-       iter_swap(current.lib_order.begin()+ i->first, current.lib_order.begin()+i->second);
+       iter_swap(current.lib_order.begin() + i->first, current.lib_order.begin()+i->second);
        long f_current = fast_eval(current);
        if( f_current > f_best)
        {
@@ -287,11 +287,25 @@ void  modeling_MBMP(solution &S) //build a Maximum Bipartite Matching Problem
 
 //  //getting the active libraries...
 //  //compute the number of book per library given the current order..
- vector<vector<int > > edge(S.edge.size());
+  int s, t;
+//  unordered_map<int, int>pair<int, int> > > f_adj;//, b_adj;
+
+//  for(int i = 0 ; i < S.edge.size(); i++)
+//  {
+//	vector<pair<int, int>> tmp;
+//     for(int j = 0; j < S.edge[i].size(); j++)
+//	tmp.push_back(make_pair(S.edge[i][j], INF));
+//     f_adj.push_back(tmp);
+//  }
+//
+//
+//  s = f_adj.size();
+//  vector<pair<int, int>> tmp;
+//  for(int i = 0; i < L; i++)
+//     tmp.push_back(make_pair(S.edge[i][j], S.edge[i].size()));
+//  f_adj.push_back(tmp);
+//  max_fow(f_adj, b_adj, s, t);
   
-  vector<vector<int> >  weight;
-//  int s = edge.size();
-//  //solving problem.. 
-//  
-//  
+
+    
 }
