@@ -17,7 +17,7 @@ void augment(int v, int minEdge, vector<int> &p, int s)
      res[v][p[v]] +=f;
   }
 }
-int max_flow(vector<vector<int>>edge)
+void max_flow(vector<vector<int>>edge, int s, int e)
 {
   vector<int> p;
   int res[MAXNODE][MAXNODE], mf, f, s ,t;
@@ -50,10 +50,6 @@ int max_flow(vector<vector<int>>edge)
       if(f==0) break;
       mf +=f;
    }
-}
-void BMP(vector< vector<int> > &graph) //computes the
-{
-   
 }
 int main()
 {
