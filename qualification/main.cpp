@@ -12,13 +12,13 @@ vector<int> counter_books;
 struct solution
 {
    vector<int> lib_order;
-   vector< vector<pair<int, bool> > > edge; // the first is library ids, second id of libraries..
-   vector< vector< int> > accumulative_score;
-   vector<int> start_day;
-   vector<vector<pair<int, int> > > idxBL; //indexes of books in libraries...
-   vector<int> disabled_libraries;
-};
+   vector< vector<int> > > edgeLB; // the first is library ids, second id of books..
+   vector<pair< int, vector<pair<int, int> > > > edgeBL; //books in libraries, < library index,  < active index, <id_library, index in id_library> > >
 
+   vector<int> start_day;
+   vector<int> disabled_libraries;
+   vector< vector< int> > accumulative_score;
+};
 
 
 void augment(int v, int minEdge, vector<int> &p, int s, unordered_map<int, unordered_map<int, int> > &adj, int &f);
@@ -90,15 +90,15 @@ solution hyper_heuristic()
  initialization(S);
  sort_by_signup_time(S);
  unique_books(S);
- modeling_MBMP(S);
- cout << fast_eval(S);
-exit(0);
-cout << "dd"<<endl;
+// modeling_MBMP(S);
+// cout << fast_eval(S);
+//exit(0);
  int ite=1000;
  while(ite--)
  {
     //local search 1  by libraries..
-     S = local_search_1(S, 1000);
+     S = local_search_1(S, 100);
+     S = local_search_2(S, 100);
  } 
  print_solution(S);
  cout << fast_eval(S);
@@ -141,7 +141,7 @@ void initialization(solution &s)//initialization does not takes into considerati
      s.edge[i].clear();
      for(int j = 0; j < books_in_library[i].size(); j++)
      {
-	s.idxBL[books_in_library[i][j]].push_back(make_pair(i,s.edge[i].size()));
+	s.idxBL.second[books_in_library[i][j]].push_back(make_pair(i,s.edge[i].size()));
 	s.edge[i].push_back(make_pair(books_in_library[i][j], !book_used[books_in_library[i][j]]));
 	book_used[books_in_library[i][j]] = true;
      }
@@ -264,34 +264,46 @@ solution local_search_1(solution best, int cont)// swapping libraries..
     }
  return best;
 }
-//
-//solution local_search_1(solution best, int cont)// swapping libraries..
-//{
-//  long f_best= fast_eval(best);
-////  update_information(best);
-//  cout << f_best<<endl;
-//
-//  solution current = best;
-//  while(cont--)
-//  {
-//    //int idx1 = current.out_libraries[rand()% (int)current.out_libraries.size()], idx2 = rand()%L;
-//    int idx1 = rand()%L, idx2 = rand()%L;
-//    iter_swap(current.lib_order.begin()+idx1, current.lib_order.begin()+idx2);
-//    long f_current = fast_eval(current);
-//    if( f_current > f_best)
-//    {
-//        iter_swap(best.lib_order.begin()+idx1, best.lib_order.begin()+idx2);
-//	f_best= f_current;
-//	best = current;
-//        print_solution(best);
-//	cout << f_best<<endl;
-//    }
-//    else
-//      iter_swap(current.lib_order.begin()+idx1, current.lib_order.begin()+idx2);
-//  }
-// return best;
-//}
 
+solution local_search_2(solution best, int cont)// swapping libraries..
+{
+  long f_best= fast_eval(best);
+  bool improved = true;
+  
+  while(improved)
+  {
+    improved = false;
+    //build neighbour..
+    solution current = best;
+    //defining neighbour neighbour... 
+    for(int i = 0; i < cont ; i++) 
+    {
+       int id_book = rand()%current.idxBL.size();
+       while(current.idxBL[id_book].size()<=1) id_book = rand()%current.idxBL.size();
+
+       int idx_lib_old = current.idxBL[id_book].first;
+       int idx_lib_new = rand()%current.idxBL[id_book].size();
+       while(id_lib_new == id_lib_old) idx_lib_new = rand()%current.idxBL[id_book].size()
+       current.idxBL[id_book].first = id_lib_new;
+       
+       for(int j = 0; j < current.idxBL[idxa].size(); j++)
+	current[]
+              
+       long f_current = fast_eval(current);
+       if( f_current > f_best)
+       {
+	   improved = true;
+           f_best= f_current;
+           best = current;
+           print_solution(best);
+           cout << f_best<<endl;
+       }
+       else
+         iter_swap(current.lib_order.begin()+i->first, current.lib_order.begin()+i->second);
+       }
+    }
+ return best;
+}
 void  modeling_MBMP(solution &S) //build a Maximum Bipartite Matching Problem
 {
 
