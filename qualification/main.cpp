@@ -307,22 +307,26 @@ void  modeling_MBMP(solution &S) //build a Maximum Bipartite Matching Problem
      {
 	int a = *i, b = (j->first+L);
 	adj[a][b] = INF; 
-	//adj[b][a] = 0; //link between libreries and books...
+	adj[b][a] = 0; //link between libreries and books...
      }
   }
   s = L+B;
   t = L+B+1;
+  adj[s][s] = -1;
+  adj[t][t] = -1;
   for(auto i = S.lib_order.begin(); i != S.lib_order.end(); i++) adj[s][*i] = S.edge[*i].size();
   for(int j = 0; j < B; j++) adj[j+L][t] = 1;
-  //max_fow(adj, s, t);
+  max_flow(adj, s, t);
    for(auto i = S.lib_order.begin(); i != S.lib_order.end(); i++)
   {
      for(int j = 0;  j < S.edge[*i].size(); j++)
      { 
         S.edge[*i][j].second = false;
 	int a = *i, b = (S.edge[*i][j].first+L);
-	if(adj[b][a] >= 1){
-	cout << "lll" <<endl;
+
+	if(adj[b][a] == 1 ){
+	cout << *i << " " <<j <<endl;
+//	cout << "aa"<<endl;
 	S.edge[*i][j].second = true;
 	}
      }
@@ -342,16 +346,16 @@ void augment(int v, int minEdge, vector<int> &p, int s, unordered_map<int, unord
   {
      augment(p[v], min(minEdge, adj[p[v]][v]),p,s, adj, f);
      adj[p[v]][v] -=f;
-     adj[v][p[v]] +=f;
+//     adj[v][p[v]] +=f;
   }
 }
 void max_flow(unordered_map<int, unordered_map<int, int> > &adj, int s, int t)
 {
-  vector<int> p;
-  int mf, f;
-   mf = 0;
+  int mf = 0, f;
    while(true)
    {
+      vector<int> p(adj.size(), -1);
+//	cout << "\n"<< p.size() <<endl;
       f = 0;
       vector<int> dist(adj.size(), INF);
       dist[s] = 0;
@@ -361,10 +365,12 @@ void max_flow(unordered_map<int, unordered_map<int, int> > &adj, int s, int t)
       {
 	int u = q.front();
         q.pop();
+//	cout << u <<":"<< t <<endl;
 	if(u==t) break;	
         for(auto i = adj[u].begin(); i != adj[u].end(); i++)
 	{
-	   if( i->second > 0 && dist[i->first] == INF )
+	//cout << u << "_"<<i->first << "_"<<i->second<<" w: "<< dist[i->first] <<endl;
+	   if( i->second > 0 && dist[i->first] == INF)// && u != i->first)
 	   {
 	      dist[i->first] = dist[u]+1;
 	      q.push(i->first);
@@ -374,6 +380,8 @@ void max_flow(unordered_map<int, unordered_map<int, int> > &adj, int s, int t)
       }
       augment(t, INF, p, s, adj, f);
       if(f==0) break;
+	cout << mf<<endl;
       mf +=f;
    }
+	cout << mf <<endl;
 }
