@@ -12,7 +12,7 @@ vector<int> counter_books;
 struct solution
 {
    vector<int> lib_order;
-   vector< vector<int> > > edgeLB; // the first is library ids, second id of books..
+   vector< vector<int> > edgeLB; // the first is library ids, second id of books..
    vector<pair< int, vector<pair<int, int> > > > edgeBL; //books in libraries, < library index,  < active index, <id_library, index in id_library> > >
 
    vector<int> start_day;
@@ -25,6 +25,7 @@ void augment(int v, int minEdge, vector<int> &p, int s, unordered_map<int, unord
 void max_flow(unordered_map<int, unordered_map<int, int> > &adj, int s, int t);
 
 solution local_search_1(struct solution initial, int cont);// swapping libraries..
+solution local_search_2(solution best, int cont);// swapping books
 void print_solution(struct solution &sol);
 long fast_eval(struct solution &Sol);
 void sort_by_signup_time(struct solution &sol);
@@ -50,8 +51,8 @@ void print_solution(struct solution &sol)
   for(auto i = sol.lib_order.begin(); i != sol.lib_order.end(); i++)
   {
 	vector<int> tmp;
-	for(auto j = sol.edge[*i].begin(); j != sol.edge[*i].end() ; j++)
-	   if( j->second) tmp.push_back(j->first);
+	for(auto j = sol.edgeLB[*i].begin(); j != sol.edgeLB[*i].end() ; j++)
+	   if( *i == sol.edgeBL[*j].first) tmp.push_back(*j);
        if(!tmp.empty())
        {
 	l_b.push_back(tmp);
@@ -79,7 +80,7 @@ void print_solution(struct solution &sol)
 void sort_by_signup_time(struct solution &S)
 {
    vector<pair<int, int> > vp;
-   for(int i = 0; i < S.edge.size(); i++)
+   for(int i = 0; i < S.edgeLB.size(); i++)
    vp.push_back(make_pair(signup_time_l[S.lib_order[i]], i));
    sort(vp.begin(), vp.end());
    for(int i = 0; i < vp.size(); i++) S.lib_order[i] = vp[i].second;
@@ -97,8 +98,8 @@ solution hyper_heuristic()
  while(ite--)
  {
     //local search 1  by libraries..
-     S = local_search_1(S, 100);
-     S = local_search_2(S, 100);
+     S = local_search_1(S, 10);
+     S = local_search_2(S, 10);
  } 
  print_solution(S);
  cout << fast_eval(S);
@@ -132,17 +133,19 @@ void load_data()
 void initialization(solution &s)//initialization does not takes into consideration the repeated books.
 {
    s.lib_order.resize(L);
-   s.edge.resize(L);
-   s.idxBL.resize(B);
+   s.edgeLB.resize(L);
+   s.edgeBL.resize(B);
    vector<bool> book_used(B, false);
    for(int i = 0; i <L ;i++)
    { 
      s.lib_order[i] = i;
-     s.edge[i].clear();
+     s.edgeLB[i].clear();
      for(int j = 0; j < books_in_library[i].size(); j++)
      {
-	s.idxBL.second[books_in_library[i][j]].push_back(make_pair(i,s.edge[i].size()));
-	s.edge[i].push_back(make_pair(books_in_library[i][j], !book_used[books_in_library[i][j]]));
+        s.edgeBL[books_in_library[i][j]].second.push_back(make_pair(books_in_library[i][j],s.edgeLB[i].size()));
+	s.edgeLB[i].push_back(books_in_library[i][j]);
+        if(!book_used[books_in_library[i][j]])
+        s.edgeBL[books_in_library[i][j]].first = i;
 	book_used[books_in_library[i][j]] = true;
      }
    }
@@ -153,10 +156,10 @@ void unique_books(struct solution &s)
    //for(int i = 0;i < s.x.size(); i++)
    for(auto i = s.lib_order.begin(); i != s.lib_order.end() ; i++)
    {
-      for(auto j = s.edge[*i].begin();  j != s.edge[*i].end(); j++)
+      for(auto j = s.edgeLB[*i].begin();  j != s.edgeLB[*i].end(); j++)
       {
-	  j->second = !u_books[j->first];
-          u_books[j->first] = true;
+	  if(!u_books[*j]) s.edgeBL[*j].first = *i;
+          u_books[*j] = true;
       }
    }
 }
@@ -171,12 +174,12 @@ long fast_eval(struct solution &S)
     if(day >=D) break;
     double lib_cont=0;
     bool updated = false;
-    for(auto i_book = S.edge[*i_lib].begin(); i_book != S.edge[*i_lib].end(); i_book++)
+    for(auto i_book = S.edgeLB[*i_lib].begin(); i_book != S.edgeLB[*i_lib].end(); i_book++)
     {
-	if( !i_book->second) continue;
+	if( (*i_lib) != S.edgeBL[*i_book].first) continue;
         lib_cont++;
 	if( ((double)lib_cont/(double)shipping_l[*i_lib])  > (D-day)  )break;
-        total_score += score_books[i_book->first]; 
+        total_score += score_books[*i_book]; 
 	updated =true;
     }
     if(!updated) day -= signup_time_l[*i_lib];
@@ -195,10 +198,10 @@ void update_information(solution &S)
   {
     vector<int> tmp; 
     int partial_score = 0;
-    for(auto i_book = S.edge[*i_lib].begin(); i_book != S.edge[*i_lib].end(); i_book++)
+    for(auto i_book = S.edgeLB[*i_lib].begin(); i_book != S.edgeLB[*i_lib].end(); i_book++)
     {
-	if( !i_book->second) continue;
-        partial_score += score_books[i_book->first]; 
+	if( *i_lib != S.edgeBL[*i_book].first) continue;
+        partial_score += score_books[*i_book]; 
 	tmp.push_back(partial_score);
     }
     S.accumulative_score[*i_lib] = tmp;
@@ -222,11 +225,7 @@ void update_information(solution &S)
 // }
 
 }
-//long incremental_evaluation_libraries(solution &s)
-//{
-// long total_score = 0;
-// return total_score;
-//}
+
 solution local_search_1(solution best, int cont)// swapping libraries..
 {
   long f_best= fast_eval(best);
@@ -278,28 +277,27 @@ solution local_search_2(solution best, int cont)// swapping libraries..
     //defining neighbour neighbour... 
     for(int i = 0; i < cont ; i++) 
     {
-       int id_book = rand()%current.idxBL.size();
-       while(current.idxBL[id_book].size()<=1) id_book = rand()%current.idxBL.size();
+       int id_book = rand()%current.edgeBL.size();
+       while(current.edgeBL[id_book].second.size()<=1) id_book = rand()%current.edgeBL.size();
 
-       int idx_lib_old = current.idxBL[id_book].first;
-       int idx_lib_new = rand()%current.idxBL[id_book].size();
-       while(id_lib_new == id_lib_old) idx_lib_new = rand()%current.idxBL[id_book].size()
-       current.idxBL[id_book].first = id_lib_new;
+       int idx_lib_old = current.edgeBL[id_book].first;
+       int idx_lib_new = rand()%current.edgeBL[id_book].second.size();
+       while(idx_lib_new == idx_lib_old) idx_lib_new = rand()%current.edgeBL[id_book].second.size();
+       current.edgeBL[id_book].first = idx_lib_new;
        
-       for(int j = 0; j < current.idxBL[idxa].size(); j++)
-	current[]
-              
+
        long f_current = fast_eval(current);
        if( f_current > f_best)
        {
 	   improved = true;
+           best.edgeBL[id_book].first = current.edgeBL[id_book].first ;
            f_best= f_current;
            best = current;
            print_solution(best);
            cout << f_best<<endl;
        }
        else
-         iter_swap(current.lib_order.begin()+i->first, current.lib_order.begin()+i->second);
+           current.edgeBL[id_book].first = best.edgeBL[id_book].first ;
        }
     }
  return best;
@@ -315,9 +313,9 @@ void  modeling_MBMP(solution &S) //build a Maximum Bipartite Matching Problem
 //  for(int i = 0 ; i < S.edge.size(); i++)
   for(auto i = S.lib_order.begin(); i != S.lib_order.end(); i++)
   {
-     for(auto j = S.edge[*i].begin(); j != S.edge[*i].end(); j++)
+     for(auto j = S.edgeLB[*i].begin(); j != S.edgeLB[*i].end(); j++)
      {
-	int a = *i, b = (j->first+L);
+	int a = *i, b = ((*j)+L);
 	adj[a][b] = INF; 
 	adj[b][a] = 0; //link between libreries and books...
      }
@@ -326,20 +324,19 @@ void  modeling_MBMP(solution &S) //build a Maximum Bipartite Matching Problem
   t = L+B+1;
   adj[s][s] = -1;
   adj[t][t] = -1;
-  for(auto i = S.lib_order.begin(); i != S.lib_order.end(); i++) adj[s][*i] = S.edge[*i].size();
+  for(auto i = S.lib_order.begin(); i != S.lib_order.end(); i++) adj[s][*i] = S.edgeLB[*i].size();
   for(int j = 0; j < B; j++) adj[j+L][t] = 1;
   max_flow(adj, s, t);
    for(auto i = S.lib_order.begin(); i != S.lib_order.end(); i++)
   {
-     for(int j = 0;  j < S.edge[*i].size(); j++)
+     for(auto j = S.edgeLB[*i].begin(); j != S.edgeLB[*i].end(); j++)
      { 
-        S.edge[*i][j].second = false;
-	int a = *i, b = (S.edge[*i][j].first+L);
+	int a = *i, b = ((*j)+L);
 
 	if(adj[b][a] == 1 ){
-	cout << *i << " " <<j <<endl;
+	cout << *i << " " <<*j <<endl;
 //	cout << "aa"<<endl;
-	S.edge[*i][j].second = true;
+	S.edgeBL[*j].first = *i;
 	}
      }
   }
